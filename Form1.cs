@@ -1,16 +1,20 @@
 //using AForge.Video;
 //using AForge.Video.DirectShow;
 //using WebCamLib;
-
+using System;
+using Emgu.CV;
+using Emgu.CV.CvEnum;
+using Emgu.CV.Structure;
 using WebCamLib;
 
 namespace ImageProcessingProject
 {
     public partial class Form1 : Form
     {
- 
 
         Bitmap imageB, imageA, colorgreen, resultImage;
+
+        //for webcam 
         Device[] devices;
         Device currentDevice;
         System.Windows.Forms.Timer frameGrabber;
@@ -24,24 +28,45 @@ namespace ImageProcessingProject
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox2.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox3.SizeMode = PictureBoxSizeMode.Zoom;
-
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-         
-            
+            //Mat img = CvInvoke.Imread(@"C:\Users\Dell\Downloads\profile.png", Emgu.CV.CvEnum.ImreadModes.AnyColor);
+
+            //CvInvoke.Imshow("My Image", img);
+            //CvInvoke.WaitKey(0);
         }
 
 
         // ------------------------- BUTTON FUNCTIONS ------------------------- //
 
-        private void button1_Click(object sender, EventArgs e)
+        private void LoadImage_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                imageB = new Bitmap(ofd.FileName);
+                pictureBox1.Image = imageB;
+            }
+        }
+
+        private void LoadBackground_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                imageA = new Bitmap(ofd.FileName);
+                pictureBox2.Image = imageA;
+            }
+        }
+
+        private void ApplyGreenScreen_Click(object sender, EventArgs e)
         {
 
             if (imageA == null || imageB == null)
             {
-                MessageBox.Show("No Image Loaded!"); 
+                MessageBox.Show("No Image Loaded!");
                 return;
             }
 
@@ -70,25 +95,33 @@ namespace ImageProcessingProject
 
         }
 
-        private void button3_Click(object sender, EventArgs e)
+        private void saveImageButton_Click(object sender, EventArgs e)
         {
-            OpenFileDialog ofd = new OpenFileDialog();
-            if (ofd.ShowDialog() == DialogResult.OK)
+            if (pictureBox3.Image == null)
             {
-                imageB = new Bitmap(ofd.FileName);
-                pictureBox1.Image = imageB;
+                MessageBox.Show("No Image Loaded!");
+                return;
+            }
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp";
+            saveFileDialog.Title = "Save an Image File";
+
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                System.Drawing.Imaging.ImageFormat format = System.Drawing.Imaging.ImageFormat.Png;
+                string ext = System.IO.Path.GetExtension(saveFileDialog.FileName).ToLower();
+                if (ext == ".jpg" || ext == ".jpeg")
+                    format = System.Drawing.Imaging.ImageFormat.Jpeg;
+                else if (ext == ".png")
+                    format = System.Drawing.Imaging.ImageFormat.Png;
+                else if (ext == ".bmp")
+                    format = System.Drawing.Imaging.ImageFormat.Bmp;
+
+                pictureBox3.Image.Save(saveFileDialog.FileName, format);
+
             }
         }
 
-        private void button2_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog ofd = new OpenFileDialog();
-            if (ofd.ShowDialog() == DialogResult.OK)
-            {
-                imageA = new Bitmap(ofd.FileName);
-                pictureBox2.Image = imageA;
-            }
-        }
 
         // ------------------------- IMAGE PROCESSING FUNCTIONS ------------------------- //
         private Bitmap ProcessCopy(Bitmap source)
@@ -140,7 +173,7 @@ namespace ImageProcessingProject
 
         private Bitmap ProcessSepia(Bitmap source)
         {
-            Bitmap result = new Bitmap(source.Width, source.Height);            
+            Bitmap result = new Bitmap(source.Width, source.Height);
             for (int y = 0; y < source.Height; y++)
             {
                 for (int x = 0; x < source.Width; x++)
@@ -164,55 +197,51 @@ namespace ImageProcessingProject
         }
 
 
-        private void copyImageToolStripMenuItem_Click(object sender, EventArgs e)
+        // ------------------------- IMAGE PROCESSING BUTTONS ------------------------- //
+        private void copyImage_Click(object sender, EventArgs e)
         {
-            if (imageA == null)
+            if (imageB == null)
             {
                 MessageBox.Show("No Image Loaded!");
                 return;
             }
             currentFilter = "copy";
-            resultImage = ProcessCopy(imageB);       
+            resultImage = ProcessCopy(imageB);
             pictureBox3.Image = resultImage;
-
         }
 
-        private void greyscaleToolStripMenuItem_Click(object sender, EventArgs e)
+        private void greyscale_Click(object sender, EventArgs e)
         {
-            if (imageA == null)
+            if (imageB == null)
             {
                 MessageBox.Show("No Image Loaded!");
                 return;
             }
             currentFilter = "grey";
-            if (imageB == null) return;         
             resultImage = ProcessGreyscale(imageB);
             pictureBox3.Image = resultImage;
         }
 
-        private void colorInversionToolStripMenuItem_Click(object sender, EventArgs e)
+        private void invert_Click(object sender, EventArgs e)
         {
-            if (imageA == null)
+            if (imageB == null)
             {
                 MessageBox.Show("No Image Loaded!");
                 return;
             }
             currentFilter = "invert";
-            if (imageB == null) return;
             resultImage = ProcessInvert(imageB);
             pictureBox3.Image = resultImage;
         }
 
-        private void histogramToolStripMenuItem_Click(object sender, EventArgs e)
+        private void histogram_Click(object sender, EventArgs e)
         {
-            if (imageA == null)
+            if (imageB == null)
             {
                 MessageBox.Show("No Image Loaded!");
                 return;
             }
             currentFilter = "histogram";
-            if (imageB == null) return;
-
             int[] grayHist = new int[256];
 
             // Step 1,2 = Convert to grayscale and count pixel levels
@@ -247,51 +276,16 @@ namespace ImageProcessingProject
             pictureBox3.Image = resultImage;
         }
 
-        private void sepiaToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (imageA == null)
-            {
-                MessageBox.Show("No Image Loaded!");
-                return;
-            }
-            currentFilter = "sepia";
-            if (imageB == null) return;         
-            resultImage = ProcessSepia(imageB);
-            pictureBox3.Image = resultImage;
-        }
-
-        private void button4_Click(object sender, EventArgs e)
+        private void sepia_Click(object sender, EventArgs e)
         {
             if (imageB == null)
             {
                 MessageBox.Show("No Image Loaded!");
                 return;
             }
-            SaveFileDialog saveFileDialog = new SaveFileDialog();
-            //if (saveFileDialog.ShowDialog() == DialogResult.OK)
-            //{
-            //    if (pictureBox3.Image != null)
-            //        pictureBox3.Image.Save(saveFileDialog.FileName);
-            //    else
-            //        MessageBox.Show("No image to save");
-            //}
-            saveFileDialog.Filter = "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp";
-            saveFileDialog.Title = "Save an Image File";
-
-            if (saveFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                System.Drawing.Imaging.ImageFormat format = System.Drawing.Imaging.ImageFormat.Png;
-                string ext = System.IO.Path.GetExtension(saveFileDialog.FileName).ToLower();
-                if (ext == ".jpg" || ext == ".jpeg")
-                    format = System.Drawing.Imaging.ImageFormat.Jpeg;
-                else if (ext == ".png")
-                    format = System.Drawing.Imaging.ImageFormat.Png;
-                else if (ext == ".bmp")
-                    format = System.Drawing.Imaging.ImageFormat.Bmp;
-
-                imageB.Save(saveFileDialog.FileName, format);
-                
-            }
+            currentFilter = "sepia";
+            resultImage = ProcessSepia(imageB);
+            pictureBox3.Image = resultImage;
         }
 
         private void menuStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
@@ -299,15 +293,14 @@ namespace ImageProcessingProject
 
         }
 
-        private void openWebcamToolStripMenuItem_Click(object sender, EventArgs e)
+        // ------------------------- WEBCAM PROCESSING FUNCTIONS ------------------------- //
+
+
+        private void openwebcam_Click(object sender, EventArgs e)
         {
             if (devices.Length > 0)
             {
                 currentDevice = devices[0];
-
-              
-
-
                 currentDevice.Init(pictureBox1.Height, pictureBox1.Width, pictureBox1.Handle.ToInt32());
 
                 frameGrabber = new System.Windows.Forms.Timer();
@@ -322,6 +315,19 @@ namespace ImageProcessingProject
 
         }
 
+        private void stoprecording_Click(object sender, EventArgs e)
+        {
+
+            if (currentDevice != null)
+            {
+                currentDevice.Stop();
+                currentDevice = null;
+                pictureBox1.Image = null;
+            }
+
+        }
+
+        //helping function to capture frame from webcam
         private void CaptureFrame(object sender, EventArgs e)
         {
             if (currentDevice != null)
@@ -389,19 +395,136 @@ namespace ImageProcessingProject
             }
         }
 
-        private void sToolStripMenuItem_Click(object sender, EventArgs e)
-        {
 
-            if (currentDevice != null)
-            {
-                currentDevice.Stop();
-                currentDevice = null;
-                pictureBox1.Image = null;
-            }
+
+        // ------------------------- CONVOLUTION MATRIX ------------------------- //
+
+
+        private void applyConvolutionToolStripMenuItem_Click(object sender, EventArgs e)
+        {
 
         }
 
-       
+        private void shrinkToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (pictureBox1.Image == null)
+            {
+                MessageBox.Show("No image loaded!");
+                return;
+            }
+            Bitmap srcBitmap = (Bitmap)pictureBox1.Image;
+            Mat src = srcBitmap.ToMat();
+
+            Matrix<float> kernel = new Matrix<float>(3, 3);
+            float val = 1f / 9f; // average of 3x3 neighborhood
+            kernel.SetValue(val);
+
+            Mat dst = new Mat(src.Size, DepthType.Cv8U, src.NumberOfChannels);
+            CvInvoke.Filter2D(src, dst, kernel, new System.Drawing.Point(-1, -1));
+            pictureBox3.Image = dst.ToBitmap();
+        }
+
+        private void gaussianToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (pictureBox1.Image == null) { 
+                MessageBox.Show("No image loaded!");
+                return; 
+            }
+            Bitmap srcBitmap = (Bitmap)pictureBox1.Image; 
+            Mat src = srcBitmap.ToMat();
+
+            Matrix<float> kernel = new Matrix<float>(3, 3);
+            float val = 1f / 16f; // Gaussian 3x3 approximation
+            kernel[0, 0] = 1 * val; kernel[0, 1] = 2 * val; kernel[0, 2] = 1 * val;
+            kernel[1, 0] = 2 * val; kernel[1, 1] = 4 * val; kernel[1, 2] = 2 * val;
+            kernel[2, 0] = 1 * val; kernel[2, 1] = 2 * val; kernel[2, 2] = 1 * val;
+
+            Mat dst = new Mat(src.Size, DepthType.Cv8U, src.NumberOfChannels);
+            CvInvoke.Filter2D(src, dst, kernel, new System.Drawing.Point(-1, -1));
+            pictureBox3.Image = dst.ToBitmap();
+        }
+
+        private void smoothToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (pictureBox1.Image == null)
+            {
+                MessageBox.Show("No image loaded!");
+                return;
+            }
+            Bitmap srcBitmap = (Bitmap)pictureBox1.Image;
+            Mat src = srcBitmap.ToMat();
+
+            Matrix<float> kernel = new Matrix<float>(3, 3);
+            float val = 1f / 16f;
+            kernel[0, 0] = 1 * val; kernel[0, 1] = 2 * val; kernel[0, 2] = 1 * val;
+            kernel[1, 0] = 2 * val; kernel[1, 1] = 4 * val; kernel[1, 2] = 2 * val;
+            kernel[2, 0] = 1 * val; kernel[2, 1] = 2 * val; kernel[2, 2] = 1 * val;
+
+            Mat dst = new Mat(src.Size, DepthType.Cv8U, src.NumberOfChannels);
+            CvInvoke.Filter2D(src, dst, kernel, new System.Drawing.Point(-1, -1));
+            pictureBox3.Image = dst.ToBitmap();
+        }
+
+        private void sharpenToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (pictureBox1.Image == null)
+            {
+                MessageBox.Show("No image loaded!");
+                return;
+            }
+            Bitmap srcBitmap = (Bitmap)pictureBox1.Image;
+            Mat src = srcBitmap.ToMat();
+
+            Matrix<float> kernel = new Matrix<float>(3, 3);
+            float factor = 3f;
+            kernel[0, 0] = 0 / factor; kernel[0, 1] = -2 / factor; kernel[0, 2] = 0 / factor;
+            kernel[1, 0] = -2 / factor; kernel[1, 1] = 11 / factor; kernel[1, 2] = -2 / factor;
+            kernel[2, 0] = 0 / factor; kernel[2, 1] = -2 / factor; kernel[2, 2] = 0 / factor;
+
+            Mat dst = new Mat(src.Size, DepthType.Cv8U, src.NumberOfChannels);
+            CvInvoke.Filter2D(src, dst, kernel, new System.Drawing.Point(-1, -1));
+            pictureBox3.Image = dst.ToBitmap();
+        }
+
+        private void meanRemovalToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (pictureBox1.Image == null)
+            {
+                MessageBox.Show("No image loaded!");
+                return;
+            }
+            Bitmap srcBitmap = (Bitmap)pictureBox1.Image;
+            Mat src = srcBitmap.ToMat();
+
+            Matrix<float> kernel = new Matrix<float>(3, 3);
+            kernel[0, 0] = -1; kernel[0, 1] = -1; kernel[0, 2] = -1;
+            kernel[1, 0] = -1; kernel[1, 1] = 9; kernel[1, 2] = -1;
+            kernel[2, 0] = -1; kernel[2, 1] = -1; kernel[2, 2] = -1;
+
+            Mat dst = new Mat(src.Size, DepthType.Cv8U, src.NumberOfChannels);
+            CvInvoke.Filter2D(src, dst, kernel, new System.Drawing.Point(-1, -1));
+            pictureBox3.Image = dst.ToBitmap();
+        }
+
+        private void embosingToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (pictureBox1.Image == null)
+            {
+                MessageBox.Show("No image loaded!");
+                return;
+            }
+            Bitmap srcBitmap = (Bitmap)pictureBox1.Image;
+            Mat src = srcBitmap.ToMat();
+
+            Matrix<float> kernel = new Matrix<float>(3, 3);
+            kernel[0, 0] = -1; kernel[0, 1] = 0; kernel[0, 2] = -1;
+            kernel[1, 0] = -0; kernel[1, 1] = 4; kernel[1, 2] = 0;
+            kernel[2, 0] = -1; kernel[2, 1] = 0; kernel[2, 2] = -1;
+
+            Mat dst = new Mat(src.Size, DepthType.Cv8U, src.NumberOfChannels);
+            CvInvoke.Filter2D(src, dst, kernel, new System.Drawing.Point(-1, -1));
+            pictureBox3.Image = dst.ToBitmap();
+        }
     }
 }
    
